@@ -20,12 +20,6 @@ class Stream():
         self.streamWorker.start()
 
 
-    def open(self) -> None:
-        self.callback = callback
-
-        self.stream = pylsl.stream_open(self.name,)
-        pass
-
     def __worker(self):
 
         while True:
@@ -38,14 +32,18 @@ class Stream():
 class LSL:
 
     def __init__(self):
+        self.discoveredOutlets = dict()
+        self.openStreams       = dict()
         pass
 
-    def scan(self):
+    def scan(self,onName):
         self.streams = pylsl.resolve_streams()
         for stream in self.streams:
             print(dir(stream),stream.name(),stream.hostname(),stream.session_id(),stream.source_id())
+            self.discoveredOutlets[stream.name()+stream.source_id()] = stream
+            onName(stream.name(),stream.source_id())
 
-
-
-backend = LSL()
-backend.scan()
+    def open(self,name,source_id,callback):
+        stream = self.discoveredOutlets[name+source_id]
+        self.openStreams[name+source_id] = Stream(stream.name(),stream.source_id(),stream.type(),callback)
+        pass
