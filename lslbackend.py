@@ -35,7 +35,7 @@ class Stream():
             # interested in it)
             sample, timestamp = self.inlet.pull_sample()
 
-            self.callback(sample, timestamp)
+            self.callback(self.stream.name()+self.stream.source_id(), sample, timestamp)
 
     def close(self):
         self.workerRun = False
@@ -63,11 +63,14 @@ class LSL:
         if name in self.discoveredOutlets.keys():
             print("stream found")
             stream = self.discoveredOutlets[name]
+            print(dir(stream))
 
             print("adding stream to open streams")
             self.openStreams[name] = Stream(stream,callback)
+            return stream.channel_count()
         else:
             print(f"stream not found")
+            return 0
         pass
 
     def close(self,name):

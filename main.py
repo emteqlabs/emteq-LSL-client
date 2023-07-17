@@ -8,9 +8,13 @@ class App(QtWidgets.QMainWindow):
     def __init__(self, parent = None):
         super(App,self).__init__(parent)
 
-        self.bufferIdx = 0
         self.bufferLength = 1000
-        self.plotBuffers = [np.zeros((self.bufferLength))]
+        self.streamIsSet = dict()
+        self.plotsStream = dict()
+        self.plotBuffers = dict()
+        self.dataLines   = dict()
+        self.buffersIdx = dict()
+        self.plotList = []
         self.backend = LSL()
 
         ## Define a top-level widget to hold everything
@@ -20,12 +24,6 @@ class App(QtWidgets.QMainWindow):
         # text = QtWidgets.QLineEdit('enter text')
         self.scannedOutlets   = QtWidgets.QListWidget()
         self.connectedOutlets = QtWidgets.QListWidget()
-
-        self.plot = pg.PlotWidget()
-        self.plot2 = pg.PlotWidget()
-        self.plot3 = pg.PlotWidget()
-        self.plot4 = pg.PlotWidget()
-        self.data_line =  self.plot.plot(self.plotBuffers[0])
 
         self.btn.clicked.connect(self.buttonCallback)
 
@@ -38,20 +36,18 @@ class App(QtWidgets.QMainWindow):
         self.layout.addWidget(self.scannedOutlets, 2, 0)  # list widget goes in bottom-left
         self.layout.addWidget(self.connectedOutlets, 3, 0)
 
-        self.scroll = QtWidgets.QScrollArea()
+        # scroll area widget contents - layout
+        self.scrollLayout = QtWidgets.QFormLayout()
 
-        self.layout.addWidget(self.scroll, 0, 1, 4, 1)
-        scrollContent = QtWidgets.QWidget(self.scroll)
+        # scroll area widget contents
+        self.scrollWidget = QtWidgets.QWidget()
+        self.scrollWidget.setLayout(self.scrollLayout)
 
-        scrollLayout = QtWidgets.QVBoxLayout(scrollContent)
-        scrollContent.setLayout(scrollLayout)
-        ## Display the widget as a new window
-
-        scrollLayout.addWidget(self.plot)
-        scrollLayout.addWidget(self.plot2)
-        scrollLayout.addWidget(self.plot3)
-        scrollLayout.addWidget(self.plot4)# plot goes on right side, spanning 3 rows
-        self.scroll.setWidget(scrollContent)
+        # scroll area
+        self.scrollArea = QtWidgets.QScrollArea()
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setWidget(self.scrollWidget)
+        self.layout.addWidget(self.scrollArea, 0, 1, 4, 1)
 
         # central widget
         self.centralWidget = QtWidgets.QWidget()
@@ -60,6 +56,25 @@ class App(QtWidgets.QMainWindow):
         # set central widget
         self.setCentralWidget(self.centralWidget)
 
+    def addStreamPlots(self,streamName,numberOfPlots):
+        self.plotBuffers[streamName] = [np.zeros(self.bufferLength)]*numberOfPlots
+        self.buffersIdx[streamName] = 0
+
+        self.plotsStream[streamName] = []
+        self.dataLines[streamName] = []
+        for n in range(numberOfPlots):
+            self.plotsStream[streamName].append(pg.PlotWidget())
+            self.scrollLayout.addRow(self.plotsStream[streamName][n])# plot goes on right side, spanning 3 rows
+            self.dataLines[streamName].append(self.plotsStream[streamName][n].plot(self.plotBuffers[streamName][n]))
+
+        self.streamIsSet[streamName] = True
+        pass
+
+    def removeStreamPlots(self,streamName):
+        self.streamIsSet[streamName] = False
+        for n in range(len(self.plotsStream[streamName])):
+            self.scrollLayout.removeRow(self.plotsStream[streamName][n])
+
     def onName(self,name,source_id):
         self.scannedOutlets.addItem(name+source_id)
         self.scannedOutlets.itemClicked.connect(self.itemCallback)
@@ -67,10 +82,7 @@ class App(QtWidgets.QMainWindow):
     def buttonCallback(self):
         self.backend.scan(onName=self.onName)
 
-        print("clicked")
-
     def itemCallback(self,item):
-        print(f"itemCallback {item.text()}")
 
         self.scannedOutlets.takeItem(self.scannedOutlets.row(item))
         self.scannedOutlets.itemClicked.disconnect()
@@ -78,7 +90,8 @@ class App(QtWidgets.QMainWindow):
         self.connectedOutlets.addItem(item.text())
         self.connectedOutlets.itemClicked.connect(self.connectedItemCallback)
 
-        self.backend.open(item.text(),self.signalCallback)
+        nChannelsToAdd = self.backend.open(item.text(),self.signalCallback)
+        self.addStreamPlots(item.text(),nChannelsToAdd)
 
     def connectedItemCallback(self,item):
         print(f"connectedItemCallback {item.text()}")
@@ -86,19 +99,30 @@ class App(QtWidgets.QMainWindow):
         self.connectedOutlets.itemClicked.disconnect()
 
         self.backend.close(item.text())
+        self.removeStreamPlots(item.text())
 
         self.scannedOutlets.addItem(item.text())
         self.scannedOutlets.itemClicked.connect(self.itemCallback)
 
-    def signalCallback(self,sample, timestamp):
+    def signalCallback(self,streamName, samples, timestamp):
         # print(f"sample: {sample}, timestamp: {timestamp}")
-        self.plotBuffer[self.bufferIdx] = sample[0]
-        self.bufferIdx += 1
-        if self.bufferIdx >= self.bufferLength:
-            self.bufferIdx = 0
+        if not (streamName in self.streamIsSet.keys()):
+            return
 
-        self.data_line.setData(self.plotBuffer)
-        pass
+        if not self.streamIsSet[streamName]:
+            return
+
+        nChannels = len(samples)
+        for n in range(nChannels):
+            self.plotBuffers[streamName][n][self.buffersIdx[streamName]] = samples[n]
+
+            self.buffersIdx[streamName] += 1
+            if self.buffersIdx[streamName] >= self.bufferLength:
+                self.buffersIdx[streamName] = 0
+
+        for n in range(nChannels):
+            self.dataLines[streamName][n].setData(self.plotBuffers[streamName][n])
+
 
 if __name__ == "__main__":
     ## Always start by initializing Qt (only once per application)
