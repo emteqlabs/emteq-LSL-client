@@ -63,7 +63,7 @@ class LSL:
         if name in self.discoveredOutlets.keys():
             print("stream found")
             stream = self.discoveredOutlets[name]
-            
+
             print("adding stream to open streams")
             self.openStreams[name] = Stream(stream,callback)
         else:

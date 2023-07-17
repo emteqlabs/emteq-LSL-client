@@ -1,21 +1,19 @@
-from PyQt6 import QtWidgets  # Should work with PyQt5 / PySide2 / PySide6 as well
+from PyQt6 import QtWidgets,QtGui # Should work with PyQt5 / PySide2 / PySide6 as well
 import pyqtgraph as pg
 from lslbackend import LSL
 import numpy as np
 
-class App:
+class App(QtWidgets.QMainWindow):
 
-    def __init__(self):
+    def __init__(self, parent = None):
+        super(App,self).__init__(parent)
 
         self.bufferIdx = 0
         self.bufferLength = 1000
-        self.plotBuffer = np.zeros((self.bufferLength))
+        self.plotBuffers = [np.zeros((self.bufferLength))]
         self.backend = LSL()
 
-        self.app = QtWidgets.QApplication([])
         ## Define a top-level widget to hold everything
-        w = QtWidgets.QWidget()
-        w.setWindowTitle('PyQtGraph example')
 
         ## Create some widgets to be placed inside
         self.btn = QtWidgets.QPushButton('scan')
@@ -24,24 +22,43 @@ class App:
         self.connectedOutlets = QtWidgets.QListWidget()
 
         self.plot = pg.PlotWidget()
-        self.data_line =  self.plot.plot(self.plotBuffer)
+        self.plot2 = pg.PlotWidget()
+        self.plot3 = pg.PlotWidget()
+        self.plot4 = pg.PlotWidget()
+        self.data_line =  self.plot.plot(self.plotBuffers[0])
 
         self.btn.clicked.connect(self.buttonCallback)
 
         ## Create a grid layout to manage the widgets size and position
-        layout = QtWidgets.QGridLayout()
-        w.setLayout(layout)
+        self.layout = QtWidgets.QGridLayout()
+        # w.setLayout(self.layout)
 
         ## Add widgets to the layout in their proper positions
-        layout.addWidget(self.btn, 0, 0)  # button goes in upper-left
-        layout.addWidget(self.scannedOutlets, 2, 0)  # list widget goes in bottom-left
-        layout.addWidget(self.connectedOutlets, 3, 0)
-        layout.addWidget(self.plot, 0, 1, 3, 1)  # plot goes on right side, spanning 3 rows
-        ## Display the widget as a new window
-        w.show()
+        self.layout.addWidget(self.btn, 0, 0)  # button goes in upper-left
+        self.layout.addWidget(self.scannedOutlets, 2, 0)  # list widget goes in bottom-left
+        self.layout.addWidget(self.connectedOutlets, 3, 0)
 
-        # ## Start the Qt event loop
-        self.app.exec()  # or app.exec_() for PyQt5 / PySide2
+        self.scroll = QtWidgets.QScrollArea()
+
+        self.layout.addWidget(self.scroll, 0, 1, 4, 1)
+        scrollContent = QtWidgets.QWidget(self.scroll)
+
+        scrollLayout = QtWidgets.QVBoxLayout(scrollContent)
+        scrollContent.setLayout(scrollLayout)
+        ## Display the widget as a new window
+
+        scrollLayout.addWidget(self.plot)
+        scrollLayout.addWidget(self.plot2)
+        scrollLayout.addWidget(self.plot3)
+        scrollLayout.addWidget(self.plot4)# plot goes on right side, spanning 3 rows
+        self.scroll.setWidget(scrollContent)
+
+        # central widget
+        self.centralWidget = QtWidgets.QWidget()
+        self.centralWidget.setLayout(self.layout)
+
+        # set central widget
+        self.setCentralWidget(self.centralWidget)
 
     def onName(self,name,source_id):
         self.scannedOutlets.addItem(name+source_id)
@@ -85,4 +102,7 @@ class App:
 
 if __name__ == "__main__":
     ## Always start by initializing Qt (only once per application)
-    app = App()
+    app = QtWidgets.QApplication([])
+    mainApp = App()
+    mainApp.show()
+    app.exec()
