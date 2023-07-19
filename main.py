@@ -1,9 +1,19 @@
-from PyQt6 import QtWidgets,QtGui # Should work with PyQt5 / PySide2 / PySide6 as well
+from PyQt6 import QtCore,QtWidgets,QtGui # Should work with PyQt5 / PySide2 / PySide6 as well
 import pyqtgraph as pg
 from lslbackend import LSL
 import numpy as np
 
 class App(QtWidgets.QMainWindow):
+
+
+    # create a signal equivalent to "void someSignal(int, QWidget)"
+    newDataSignal = QtCore.pyqtSignal(str,int)
+
+    # define a slot with the same signature
+    @QtCore.pyqtSlot(str,int)
+    def someSlot(self,streamName,nChannels):
+        for n in range(nChannels):
+            self.dataLines[streamName][n].setData(self.plotBuffers[streamName][n])
 
     def __init__(self, parent = None):
         super(App,self).__init__(parent)
@@ -55,6 +65,10 @@ class App(QtWidgets.QMainWindow):
 
         # set central widget
         self.setCentralWidget(self.centralWidget)
+
+        # connect the signal to the slot
+        print(dir(self.newDataSignal))
+        self.newDataSignal.connect(self.someSlot)
 
     def addStreamPlots(self,streamName,numberOfPlots):
         self.plotBuffers[streamName] = [np.zeros(self.bufferLength)]*numberOfPlots
@@ -120,8 +134,7 @@ class App(QtWidgets.QMainWindow):
             if self.buffersIdx[streamName] >= self.bufferLength:
                 self.buffersIdx[streamName] = 0
 
-        for n in range(nChannels):
-            self.dataLines[streamName][n].setData(self.plotBuffers[streamName][n])
+        self.newDataSignal.emit(streamName,nChannels)
 
 
 if __name__ == "__main__":
