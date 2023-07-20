@@ -3,23 +3,23 @@
 import pylsl
 from threading import Thread
 
-class Stream():
 
-    def __init__(self, stream, callback):
-        print("opening streams")
+class Stream:
+
+    def __init__(self,stream) -> None:
         self.stream = stream
         self.name = stream.name()
         self.source_id = stream.source_id()
         self.lslType = stream.type()
-        self.callback = callback
-        print(f"params set name: {self.name} type: {self.lslType}")
-
-        # create a new inlet to read from the stream
-        print(f"stream resolved {self.stream}")
-
         self.inlet = pylsl.StreamInlet(self.stream)
 
-        print("starting thread")
+class StreamManager:
+
+    def __init__(self, callback):
+
+        self.streams = dict()
+
+        self.callback = callback
 
         self.workerRun = True
         self.streamWorker = Thread(target=self.__worker)
@@ -27,15 +27,22 @@ class Stream():
 
         print("started thread")
 
+    def openStream(self,name,stream):
+        self.streams[name] = Stream(stream)
+        pass
 
     def __worker(self):
 
         while self.workerRun:
-            # get a new sample (you can also omit the timestamp part if you're not
-            # interested in it)
-            sample, timestamp = self.inlet.pull_sample()
+            if self.streams:
+                streamData = dict()
+                for stream in self.streams.values():
+                    # get a new sample (you can also omit the timestamp part if you're not
+                    # interested in it)
+                    sample, timestamp = stream.inlet.pull_sample()
+                    streamData[self.stream.name()+self.stream.source_id()] = (sample, timestamp)
 
-            self.callback(self.stream.name()+self.stream.source_id(), sample, timestamp)
+                self.callback(streamData)
 
     def close(self):
         self.workerRun = False
@@ -49,6 +56,7 @@ class LSL:
     def __init__(self):
         self.discoveredOutlets = dict()
         self.openStreams       = dict()
+        self.streamManager     = StreamManager()
         pass
 
     def scan(self,onName):

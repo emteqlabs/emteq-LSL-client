@@ -118,7 +118,7 @@ class App(QtWidgets.QMainWindow):
         self.scannedOutlets.addItem(item.text())
         self.scannedOutlets.itemClicked.connect(self.itemCallback)
 
-    def signalCallback(self,streamName, samples, timestamp):
+    def signalCallback(self,streamsData):
         # print(f"sample: {sample}, timestamp: {timestamp}")
         if not (streamName in self.streamIsSet.keys()):
             return
