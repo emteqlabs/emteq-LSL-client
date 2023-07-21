@@ -8,6 +8,7 @@ class Stream:
 
     def __init__(self,stream) -> None:
         self.stream = stream
+        print(dir(stream),stream)
         self.name = stream.name()
         self.source_id = stream.source_id()
         self.lslType = stream.type()
@@ -40,9 +41,12 @@ class StreamManager:
                     # get a new sample (you can also omit the timestamp part if you're not
                     # interested in it)
                     sample, timestamp = stream.inlet.pull_sample()
-                    streamData[self.stream.name()+self.stream.source_id()] = (sample, timestamp)
+                    streamData[stream.name+stream.source_id] = (sample, timestamp)
 
                 self.callback(streamData)
+
+    def closeStream(self,name):
+        self.streams[name] = None
 
     def close(self):
         self.workerRun = False
@@ -53,10 +57,10 @@ class StreamManager:
 
 class LSL:
 
-    def __init__(self):
+    def __init__(self,callback):
         self.discoveredOutlets = dict()
         self.openStreams       = dict()
-        self.streamManager     = StreamManager()
+        self.streamManager     = StreamManager(callback)
         pass
 
     def scan(self,onName):
@@ -66,20 +70,15 @@ class LSL:
             self.discoveredOutlets[stream.name()+stream.source_id()] = stream
             onName(stream.name(),stream.source_id())
 
-    def open(self,name,callback):
-        print(f"opening stream {name}")
+    def open(self,name):
         if name in self.discoveredOutlets.keys():
-            print("stream found")
             stream = self.discoveredOutlets[name]
-            print(dir(stream))
-
-            print("adding stream to open streams")
-            self.openStreams[name] = Stream(stream,callback)
+            self.streamManager.openStream(name,stream)
             return stream.channel_count()
         else:
-            print(f"stream not found")
             return 0
-        pass
 
     def close(self,name):
-        self.openStreams[name].close()
+        pass
+        self.streamManager.closeStream(name)
+        # self.openStreams[name].close()

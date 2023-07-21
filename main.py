@@ -25,7 +25,7 @@ class App(QtWidgets.QMainWindow):
         self.dataLines   = dict()
         self.buffersIdx = dict()
         self.plotList = []
-        self.backend = LSL()
+        self.backend = LSL(self.signalCallback)
 
         ## Define a top-level widget to hold everything
 
@@ -104,7 +104,7 @@ class App(QtWidgets.QMainWindow):
         self.connectedOutlets.addItem(item.text())
         self.connectedOutlets.itemClicked.connect(self.connectedItemCallback)
 
-        nChannelsToAdd = self.backend.open(item.text(),self.signalCallback)
+        nChannelsToAdd = self.backend.open(item.text())
         self.addStreamPlots(item.text(),nChannelsToAdd)
 
     def connectedItemCallback(self,item):
@@ -120,21 +120,24 @@ class App(QtWidgets.QMainWindow):
 
     def signalCallback(self,streamsData):
         # print(f"sample: {sample}, timestamp: {timestamp}")
-        if not (streamName in self.streamIsSet.keys()):
-            return
+        for streamName in streamsData.keys():
+            if not (streamName in self.streamIsSet.keys()):
+                return
 
-        if not self.streamIsSet[streamName]:
-            return
+            if not self.streamIsSet[streamName]:
+                return
 
-        nChannels = len(samples)
-        for n in range(nChannels):
-            self.plotBuffers[streamName][n][self.buffersIdx[streamName]] = samples[n]
+            samples   = streamsData[streamName][0]
+            timestamp = streamsData[streamName][1]
+            nChannels = len(samples)
+            for n in range(nChannels):
+                self.plotBuffers[streamName][n][self.buffersIdx[streamName]] = samples[n]
 
-            self.buffersIdx[streamName] += 1
-            if self.buffersIdx[streamName] >= self.bufferLength:
-                self.buffersIdx[streamName] = 0
+                self.buffersIdx[streamName] += 1
+                if self.buffersIdx[streamName] >= self.bufferLength:
+                    self.buffersIdx[streamName] = 0
 
-        self.newDataSignal.emit(streamName,nChannels)
+            self.newDataSignal.emit(streamName,nChannels)
 
 
 if __name__ == "__main__":
