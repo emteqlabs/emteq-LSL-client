@@ -2,6 +2,7 @@ from PyQt6 import QtCore,QtWidgets,QtGui # Should work with PyQt5 / PySide2 / Py
 import pyqtgraph as pg
 from lslbackend import LSL
 import numpy as np
+import csvSaver as csv
 
 class App(QtWidgets.QMainWindow):
 
@@ -18,6 +19,8 @@ class App(QtWidgets.QMainWindow):
     def __init__(self, parent = None):
         super(App,self).__init__(parent)
 
+        self.recording = False
+
         self.bufferLength = 1000
         self.streamIsSet = dict()
         self.plotsStream = dict()
@@ -30,19 +33,22 @@ class App(QtWidgets.QMainWindow):
         ## Define a top-level widget to hold everything
 
         ## Create some widgets to be placed inside
-        self.btn = QtWidgets.QPushButton('scan')
+        self.btnScan = QtWidgets.QPushButton('scan')
+        self.btnRecord = QtWidgets.QPushButton('record')
         # text = QtWidgets.QLineEdit('enter text')
         self.scannedOutlets   = QtWidgets.QListWidget()
         self.connectedOutlets = QtWidgets.QListWidget()
 
-        self.btn.clicked.connect(self.buttonCallback)
+        self.btnScan.clicked.connect(self.buttonScan)
+        self.btnRecord.clicked.connect(self.buttonRecord)
 
         ## Create a grid layout to manage the widgets size and position
         self.layout = QtWidgets.QGridLayout()
         # w.setLayout(self.layout)
 
         ## Add widgets to the layout in their proper positions
-        self.layout.addWidget(self.btn, 0, 0)  # button goes in upper-left
+        self.layout.addWidget(self.btnScan, 0, 0)  # button goes in upper-left
+        self.layout.addWidget(self.btnRecord, 1, 0)  # button goes in upper-left
         self.layout.addWidget(self.scannedOutlets, 2, 0)  # list widget goes in bottom-left
         self.layout.addWidget(self.connectedOutlets, 3, 0)
 
@@ -88,13 +94,21 @@ class App(QtWidgets.QMainWindow):
         self.streamIsSet[streamName] = False
         for n in range(len(self.plotsStream[streamName])):
             self.scrollLayout.removeRow(self.plotsStream[streamName][n])
+            csv.close(streamName)
 
     def onName(self,name,source_id):
         self.scannedOutlets.addItem(name+source_id)
         self.scannedOutlets.itemClicked.connect(self.itemCallback)
 
-    def buttonCallback(self):
+    def buttonScan(self):
         self.backend.scan(onName=self.onName)
+
+    def buttonRecord(self):
+        print("button pressed")
+        if self.recording:
+            self.recording = False
+        else:
+            self.recording = True
 
     def itemCallback(self,item):
 
@@ -138,6 +152,12 @@ class App(QtWidgets.QMainWindow):
                     self.buffersIdx[streamName] = 0
 
             self.newDataSignal.emit(streamName,nChannels)
+
+            if self.recording:
+                csv.save(streamName,np.array(samples),timestamp)
+
+    def closeEvent(self, event):
+        self.backend.closeAll()
 
 
 if __name__ == "__main__":

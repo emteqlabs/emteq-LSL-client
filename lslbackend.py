@@ -82,3 +82,7 @@ class LSL:
         pass
         self.streamManager.closeStream(name)
         # self.openStreams[name].close()
+
+    def closeAll(self):
+        pass
+        self.streamManager.close()
