@@ -21,7 +21,7 @@ class App(QtWidgets.QMainWindow):
 
         self.recording = False
 
-        self.bufferLength = 1000
+        self.bufferLength = 10000
         self.streamIsSet = dict()
         self.plotsStream = dict()
         self.plotBuffers = dict()
@@ -77,13 +77,14 @@ class App(QtWidgets.QMainWindow):
         self.newDataSignal.connect(self.someSlot)
 
     def addStreamPlots(self,streamName,numberOfPlots):
-        self.plotBuffers[streamName] = [np.zeros(self.bufferLength)]*numberOfPlots
-        self.buffersIdx[streamName] = 0
+        self.plotBuffers[streamName] = []
+        self.buffersIdx[streamName] = [0]*numberOfPlots
 
         self.plotsStream[streamName] = []
         self.dataLines[streamName] = []
         for n in range(numberOfPlots):
             self.plotsStream[streamName].append(pg.PlotWidget())
+            self.plotBuffers[streamName].append(np.zeros(self.bufferLength))
             self.scrollLayout.addRow(self.plotsStream[streamName][n])# plot goes on right side, spanning 3 rows
             self.dataLines[streamName].append(self.plotsStream[streamName][n].plot(self.plotBuffers[streamName][n]))
 
@@ -147,9 +148,9 @@ class App(QtWidgets.QMainWindow):
             for n in range(nChannels):
                 self.plotBuffers[streamName][n][self.buffersIdx[streamName]] = samples[n]
 
-                self.buffersIdx[streamName] += 1
-                if self.buffersIdx[streamName] >= self.bufferLength:
-                    self.buffersIdx[streamName] = 0
+                self.buffersIdx[streamName][n] += 1
+                if self.buffersIdx[streamName][n] >= self.bufferLength:
+                    self.buffersIdx[streamName][n] = 0
 
             self.newDataSignal.emit(streamName,nChannels)
 
