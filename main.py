@@ -44,13 +44,20 @@ class App(QtWidgets.QMainWindow):
 
         ## Create a grid layout to manage the widgets size and position
         self.layout = QtWidgets.QGridLayout()
+        self.menuLayout = QtWidgets.QVBoxLayout()
+        self.v_widget = QtWidgets.QWidget()
+        self.v_widget.setLayout(self.menuLayout)
         # w.setLayout(self.layout)
 
         ## Add widgets to the layout in their proper positions
-        self.layout.addWidget(self.btnScan, 0, 0)  # button goes in upper-left
-        self.layout.addWidget(self.btnRecord, 1, 0)  # button goes in upper-left
-        self.layout.addWidget(self.scannedOutlets, 2, 0)  # list widget goes in bottom-left
-        self.layout.addWidget(self.connectedOutlets, 3, 0)
+        self.menuLayout.addWidget(self.btnScan)  # button goes in upper-left
+        self.menuLayout.addWidget(self.btnRecord)  # button goes in upper-left
+        self.menuLayout.addWidget(self.scannedOutlets)  # list widget goes in bottom-left
+        self.menuLayout.addWidget(self.connectedOutlets)
+        self.v_widget.setFixedWidth(200)
+
+        self.layout.addWidget(self.v_widget)
+        # self.layout.addLayout(self.menuLayout, 0, 0)
 
         # scroll area widget contents - layout
         self.scrollLayout = QtWidgets.QFormLayout()
