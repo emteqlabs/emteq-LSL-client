@@ -6,7 +6,6 @@ import csvSaver as csv
 
 class App(QtWidgets.QMainWindow):
 
-
     # create a signal equivalent to "void someSignal(int, QWidget)"
     newDataSignal = QtCore.pyqtSignal(str,int)
 
@@ -18,6 +17,9 @@ class App(QtWidgets.QMainWindow):
 
     def __init__(self, parent = None):
         super(App,self).__init__(parent)
+
+        # set the title
+        self.setWindowTitle("Emteq LSL Client")
 
         self.recording = False
 
@@ -41,6 +43,7 @@ class App(QtWidgets.QMainWindow):
 
         self.btnScan.clicked.connect(self.buttonScan)
         self.btnRecord.clicked.connect(self.buttonRecord)
+        self.btnRecord.setStyleSheet("color : green")
 
         ## Create a grid layout to manage the widgets size and position
         self.layout = QtWidgets.QGridLayout()
@@ -105,18 +108,22 @@ class App(QtWidgets.QMainWindow):
             csv.close(streamName)
 
     def onName(self,name,source_id):
-        self.scannedOutlets.addItem(name+source_id)
-        self.scannedOutlets.itemClicked.connect(self.itemCallback)
+        if not self.scannedOutlets.findItems(f"{name+source_id}",QtCore.Qt.MatchFlag.MatchExactly) and not self.connectedOutlets.findItems(f"{name+source_id}",QtCore.Qt.MatchFlag.MatchExactly):
+            self.scannedOutlets.addItem(name+source_id)
+            self.scannedOutlets.itemClicked.connect(self.itemCallback)
 
     def buttonScan(self):
         self.backend.scan(onName=self.onName)
 
     def buttonRecord(self):
-        print("button pressed")
         if self.recording:
             self.recording = False
+            self.btnRecord.setText("record")
+            self.btnRecord.setStyleSheet("color : green")
         else:
             self.recording = True
+            self.btnRecord.setText("stop recording")
+            self.btnRecord.setStyleSheet("color : red")
 
     def itemCallback(self,item):
 
