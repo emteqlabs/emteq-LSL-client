@@ -3,12 +3,12 @@ import pandas as pd
 
 isFileOpen = dict()
 
-def save(fileName, data, timestamp):
+def save(fileName, data, timestamp, channels=None):
 
     dataDict = {"timestamp":timestamp}
 
-    for chn in range(len(data)):
-        dataDict[f"chn_{chn}"] = data[chn]
+    for chn,chnName in enumerate(channels):
+        dataDict[f"{chnName}"] = data[chn]
 
 
     if not fileName in isFileOpen:

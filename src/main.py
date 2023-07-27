@@ -86,14 +86,15 @@ class App(QtWidgets.QMainWindow):
         print(dir(self.newDataSignal))
         self.newDataSignal.connect(self.someSlot)
 
-    def addStreamPlots(self,streamName,numberOfPlots):
+    def addStreamPlots(self,streamName,channels):
         self.plotBuffers[streamName] = []
-        self.buffersIdx[streamName] = [0]*numberOfPlots
+        self.buffersIdx[streamName] = [0]*len(channels)
 
         self.plotsStream[streamName] = []
         self.dataLines[streamName] = []
-        for n in range(numberOfPlots):
+        for n in range(len(channels)):
             self.plotsStream[streamName].append(pg.PlotWidget())
+            self.plotsStream[streamName][n].setTitle(f'{channels[n]}')
             self.plotBuffers[streamName].append(np.zeros(self.bufferLength))
             self.scrollLayout.addRow(self.plotsStream[streamName][n])# plot goes on right side, spanning 3 rows
             self.dataLines[streamName].append(self.plotsStream[streamName][n].plot(self.plotBuffers[streamName][n]))
@@ -158,18 +159,18 @@ class App(QtWidgets.QMainWindow):
 
             samples   = streamsData[streamName][0]
             timestamp = streamsData[streamName][1]
-            nChannels = len(samples)
-            for n in range(nChannels):
-                self.plotBuffers[streamName][n][self.buffersIdx[streamName]] = samples[n]
+            nChannels = samples.keys()
+            for n,channel in enumerate(nChannels):
+                self.plotBuffers[streamName][n][self.buffersIdx[streamName]] = samples[channel]
 
                 self.buffersIdx[streamName][n] += 1
                 if self.buffersIdx[streamName][n] >= self.bufferLength:
                     self.buffersIdx[streamName][n] = 0
 
-            self.newDataSignal.emit(streamName,nChannels)
+            self.newDataSignal.emit(streamName,len(nChannels))
 
             if self.recording:
-                csv.save(streamName,np.array(samples),timestamp)
+                csv.save(streamName,np.array(list(samples.values())),timestamp,list(nChannels))
 
     def closeEvent(self, event):
         self.backend.closeAll()

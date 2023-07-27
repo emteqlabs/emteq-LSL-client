@@ -12,18 +12,23 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 
 def main():
     srate = 100
-    name = 'Test'
-    type = 'Text'
+    name = 'Tester'
+    type = 'TestSig'
 
     n_channels = 5
     srate = 50.0
+
+    info = StreamInfo(name, type, n_channels, srate, 'float32', 'myuid34234')
+    chns = info.desc().append_child("channels")
+    # for label in ["C3", "C4", "Cz", "FPz", "POz"]:
+    #     ch = chns.append_child("channel")
+    #     ch.append_child_value("label", label)
 
     # first create a new stream info (here we set the name to BioSemi,
     # the content-type to EEG, 8 channels, 100 Hz, and float-valued data) The
     # last value would be the serial number of the device or some other more or
     # less locally unique identifier for the stream as far as available (you
     # could also omit it but interrupted connections wouldn't auto-recover)
-    info = StreamInfo(name, type, n_channels, srate, 'float32', 'myuid34234')
 
     # next make an outlet
     outlet = StreamOutlet(info)
