@@ -61,7 +61,6 @@ class StreamManager:
                 if self.streams:
                     streamData = dict()
                     for stream in self.streams.values():
-
                         # get a new sample (you can also omit the timestamp part if you're not
                         # interested in it)
 
@@ -81,7 +80,8 @@ class StreamManager:
         return self.streams[name].channels
 
     def closeStream(self,name):
-        self.streams[name] = None
+        with self.dictLock:
+            self.streams.pop(name)
 
     def close(self):
         self.workerRun = False

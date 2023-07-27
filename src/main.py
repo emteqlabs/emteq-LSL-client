@@ -23,7 +23,7 @@ class App(QtWidgets.QMainWindow):
 
         self.recording = False
 
-        self.bufferLength = 10000
+        self.bufferLength = 100
         self.streamIsSet = dict()
         self.plotsStream = dict()
         self.plotBuffers = dict()
