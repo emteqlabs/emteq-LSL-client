@@ -59,6 +59,9 @@ class App(QtWidgets.QMainWindow):
         self.menuLayout.addWidget(self.connectedOutlets)
         self.v_widget.setFixedWidth(200)
 
+        self.connectedOutlets.itemClicked.connect(self.connectedItemCallback)
+        self.scannedOutlets.itemClicked.connect(self.itemCallback)
+
         self.layout.addWidget(self.v_widget)
         # self.layout.addLayout(self.menuLayout, 0, 0)
 
@@ -83,7 +86,7 @@ class App(QtWidgets.QMainWindow):
         self.setCentralWidget(self.centralWidget)
 
         # connect the signal to the slot
-        print(dir(self.newDataSignal))
+ 
         self.newDataSignal.connect(self.someSlot)
 
     def addStreamPlots(self,streamName,channels):
@@ -111,7 +114,6 @@ class App(QtWidgets.QMainWindow):
     def onName(self,name,source_id):
         if not self.scannedOutlets.findItems(f"{name+source_id}",QtCore.Qt.MatchFlag.MatchExactly) and not self.connectedOutlets.findItems(f"{name+source_id}",QtCore.Qt.MatchFlag.MatchExactly):
             self.scannedOutlets.addItem(name+source_id)
-            self.scannedOutlets.itemClicked.connect(self.itemCallback)
 
     def buttonScan(self):
         self.backend.scan(onName=self.onName)
@@ -129,24 +131,21 @@ class App(QtWidgets.QMainWindow):
     def itemCallback(self,item):
 
         self.scannedOutlets.takeItem(self.scannedOutlets.row(item))
-        self.scannedOutlets.itemClicked.disconnect()
 
-        self.connectedOutlets.addItem(item.text())
-        self.connectedOutlets.itemClicked.connect(self.connectedItemCallback)
+        if not self.connectedOutlets.findItems(item.text(),QtCore.Qt.MatchFlag.MatchExactly):
+            self.connectedOutlets.addItem(item.text())
 
         nChannelsToAdd = self.backend.open(item.text())
         self.addStreamPlots(item.text(),nChannelsToAdd)
 
     def connectedItemCallback(self,item):
-        print(f"connectedItemCallback {item.text()}")
         self.connectedOutlets.takeItem(self.connectedOutlets.row(item))
-        self.connectedOutlets.itemClicked.disconnect()
 
         self.backend.close(item.text())
         self.removeStreamPlots(item.text())
 
-        self.scannedOutlets.addItem(item.text())
-        self.scannedOutlets.itemClicked.connect(self.itemCallback)
+        if not self.scannedOutlets.findItems(item.text(),QtCore.Qt.MatchFlag.MatchExactly):
+            self.scannedOutlets.addItem(item.text())
 
     def signalCallback(self,streamsData):
         # print(f"sample: {sample}, timestamp: {timestamp}")

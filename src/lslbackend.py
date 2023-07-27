@@ -1,21 +1,19 @@
 """Example program to show how to read a multi-channel time series from LSL."""
 
 import pylsl
-from threading import Thread
+from threading import Thread, Lock
 
 
 class Stream:
 
     def __init__(self,stream) -> None:
         self.stream = stream
-        print(dir(stream),stream)
         self.name = stream.name()
         self.source_id = stream.source_id()
         self.lslType = stream.type()
         # self.channels = stream.channels()
         self.inlet = pylsl.StreamInlet(self.stream)
         self.info  = self.inlet.info()
-        print(f"self.info {dir(self.info.desc())}")
 
         #collect channels names
         self.channels = []
@@ -38,6 +36,8 @@ class StreamManager:
 
     def __init__(self, callback):
 
+        self.dictLock = Lock()
+
         self.streams = dict()
 
         self.callback = callback
@@ -46,28 +46,33 @@ class StreamManager:
         self.streamWorker = Thread(target=self.__worker)
         self.streamWorker.start()
 
-        print("started thread")
 
     def openStream(self,name,stream):
-        self.streams[name] = Stream(stream)
+        with self.dictLock:
+            stream__ = Stream(stream)
+            if stream__:
+                self.streams[name] = stream__
         pass
 
     def __worker(self):
 
         while self.workerRun:
-            if self.streams:
-                streamData = dict()
-                for stream in self.streams.values():
-                    # get a new sample (you can also omit the timestamp part if you're not
-                    # interested in it)
-                    sample, timestamp = stream.inlet.pull_sample()
-                    metaSample = dict()
-                    for n,s in enumerate(sample):
-                        metaSample[stream.channels[n]] = s
+            with self.dictLock:
+                if self.streams:
+                    streamData = dict()
+                    for stream in self.streams.values():
 
-                    streamData[stream.name+stream.source_id] = (metaSample, timestamp)
+                        # get a new sample (you can also omit the timestamp part if you're not
+                        # interested in it)
 
-                self.callback(streamData)
+                        sample, timestamp = stream.inlet.pull_sample()
+                        metaSample = dict()
+                        for n,s in enumerate(sample):
+                            metaSample[stream.channels[n]] = s
+
+                        streamData[stream.name+stream.source_id] = (metaSample, timestamp)
+
+                    self.callback(streamData)
 
     def getChannels(self,name):
         if not name in self.streams.keys():
@@ -96,7 +101,6 @@ class LSL:
     def scan(self,onName):
         self.streams = pylsl.resolve_streams()
         for stream in self.streams:
-            print(dir(stream),stream.name(),stream.hostname(),stream.session_id(),stream.source_id())
             self.discoveredOutlets[stream.name()+stream.source_id()] = stream
             onName(stream.name(),stream.source_id())
 

@@ -5,6 +5,9 @@ isFileOpen = dict()
 
 def save(fileName, data, timestamp, channels=None):
 
+    if(len(fileName) > 20):
+        fileName = fileName[:20]
+
     dataDict = {"timestamp":timestamp}
 
     for chn,chnName in enumerate(channels):
