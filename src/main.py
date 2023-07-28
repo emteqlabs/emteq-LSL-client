@@ -11,9 +11,8 @@ class App(QtWidgets.QMainWindow):
 
     # define a slot with the same signature
     @QtCore.pyqtSlot(str,int)
-    def someSlot(self,streamName,nChannels):
-        for n in range(nChannels):
-            self.dataLines[streamName][n].setData(self.plotBuffers[streamName][n])
+    def someSlot(self,streamName,nChannel):
+        self.dataLines[streamName][nChannel].setData(self.plotBuffers[streamName][nChannel])
 
     def __init__(self, parent = None):
         super(App,self).__init__(parent)
@@ -23,7 +22,7 @@ class App(QtWidgets.QMainWindow):
 
         self.recording = False
 
-        self.bufferLength = 100
+        self.bufferLength = 300
         self.streamIsSet = dict()
         self.plotsStream = dict()
         self.plotBuffers = dict()
@@ -166,7 +165,7 @@ class App(QtWidgets.QMainWindow):
                 if self.buffersIdx[streamName][n] >= self.bufferLength:
                     self.buffersIdx[streamName][n] = 0
 
-            self.newDataSignal.emit(streamName,len(nChannels))
+                self.newDataSignal.emit(streamName,n)
 
             if self.recording:
                 csv.save(streamName,np.array(list(samples.values())),timestamp,list(nChannels))

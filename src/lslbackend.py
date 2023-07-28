@@ -43,8 +43,9 @@ class StreamManager:
         self.callback = callback
 
         self.workerRun = True
-        self.streamWorker = Thread(target=self.__worker)
-        self.streamWorker.start()
+        self.workersPool = dict()
+        # self.streamWorker = Thread(target=self.__worker)
+        # self.streamWorker.start()
 
 
     def openStream(self,name,stream):
@@ -52,26 +53,26 @@ class StreamManager:
             stream__ = Stream(stream)
             if stream__:
                 self.streams[name] = stream__
+
+        self.workersPool[f"worker_{name}"] = {"worker" : Thread(target=self.__worker,args=(f"worker_{name}",stream__,)),"run":True}
+        self.workersPool[f"worker_{name}"]["worker"].start()
         pass
 
-    def __worker(self):
+    def __worker(self,wName,stream__):
 
-        while self.workerRun:
-            with self.dictLock:
-                if self.streams:
-                    streamData = dict()
-                    for stream in self.streams.values():
-                        # get a new sample (you can also omit the timestamp part if you're not
-                        # interested in it)
+        while self.workersPool[wName]["run"]:
+            streamData = dict()
+                # get a new sample (you can also omit the timestamp part if you're not
+                # interested in it)
 
-                        sample, timestamp = stream.inlet.pull_sample()
-                        metaSample = dict()
-                        for n,s in enumerate(sample):
-                            metaSample[stream.channels[n]] = s
+            sample, timestamp = stream__.inlet.pull_sample()
+            metaSample = dict()
+            for n,s in enumerate(sample):
+                metaSample[stream__.channels[n]] = s
 
-                        streamData[stream.name+stream.source_id] = (metaSample, timestamp)
+            streamData[stream__.name+stream__.source_id] = (metaSample, timestamp)
 
-                    self.callback(streamData)
+            self.callback(streamData)
 
     def getChannels(self,name):
         if not name in self.streams.keys():
@@ -82,6 +83,7 @@ class StreamManager:
     def closeStream(self,name):
         with self.dictLock:
             self.streams.pop(name)
+        self.workersPool[f"worker_{name}"]["run"] = False
 
     def close(self):
         self.workerRun = False
