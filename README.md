@@ -1,6 +1,6 @@
 # emteq-LSL-client
 
-![image](https://github.com/emteqlabs/emteq-LSL-client/assets/40773550/bb8762c3-825b-41f9-97d2-9222bf367657)
+![image](https://github.com/emteqlabs/emteq-LSL-client/assets/40773550/69476a89-fa54-4bd3-82be-f8b8bbf3e8a7)
 
 
 This is simple LabStreamingLayer client app with multi device receiving capabilities, realtime plotting and saving data into CSV files.
