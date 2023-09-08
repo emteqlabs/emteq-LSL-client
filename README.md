@@ -19,6 +19,10 @@ requirements:
 
 `python -m pip install -r requirements.txt`
 
+for linux you need to install lsl with conda:
+
+`conda install -c conda-forge liblsl`
+
 ### 2. Run main.py
 
 `python ./src/main.py`
